@@ -1,0 +1,8 @@
+---
+- hosts: myhostname-servers
+  vars:
+    - ansible_ssh_port: 22
+  remote_user: root
+  gather_facts: no
+  roles:
+    - adminready

@@ -1,0 +1,38 @@
+---
+- name: install postgres packages
+  yum: pkg={{item}} state=present
+  with_items:
+    - postgresql
+    - postgresql-server
+    - postgresql-contrib
+    - postgresql-devel
+    - python-psycopg2
+
+- name: a new postgres database cluster
+  shell: PATH=/usr/sbin:/usr/bin:/root/bin PGSETUP_INITDB_OPTIONS="--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8" postgresql-setup initdb
+         executable=/bin/bash creates=/var/lib/pgsql/data/PG_VERSION
+
+- name: ensure the server is started
+  service: name=postgresql state=started enabled=yes
+
+- name: postgres config
+  template: src={{item}}.j2 dest=/var/lib/pgsql/data/{{item}} backup=no
+            owner=postgres group=postgres mode=0640
+  with_items:
+    - postgresql.conf
+    - pg_hba.conf
+    - pg_ident.conf
+
+- name: reload postgres config
+  service: name=postgresql state=reloaded
+
+- name: configure postgres user
+  postgresql_user: name=databaseadminuser role_attr_flags=CREATEDB
+                   encrypted=yes password=md5xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+- name: create database
+  postgresql_db: name=database encoding='UTF8' owner=databaseadminuser
+
+- name: adjust database DB privileges
+  postgresql_privs: roles=databaseadminuser db=database privs=ALL
+                    state=present type=database

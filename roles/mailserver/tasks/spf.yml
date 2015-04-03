@@ -1,0 +1,5 @@
+---
+- name: SPF - Installation
+  yum: pkg=pypolicyd-spf state=latest
+  notify:
+    - restart postfix

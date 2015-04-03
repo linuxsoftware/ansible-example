@@ -1,0 +1,13 @@
+---
+- hosts: myhostname-servers
+  vars:
+    - ansible_ssh_port: 1000
+  remote_user: theadminuser
+  su: yes
+  gather_facts: yes
+  roles:
+    - centos
+    - webserver
+    - dbserver
+    - mailserver
+    - ftpserver

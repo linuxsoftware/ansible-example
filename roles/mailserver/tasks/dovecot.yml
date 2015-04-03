@@ -1,0 +1,49 @@
+---
+- name: dovecot installed
+  yum: pkg={{item}} state=present
+  with_items:
+    - dovecot
+##    - dovecot-pigeonhole
+
+- name: Dovecot - SSL conf
+  template: src=etc_pki_dovecot_dovecot-openssl.cnf.j2
+            dest=/etc/pki/dovecot/dovecot-openssl.cnf
+            mode=0600 owner=root group=root
+
+- name: check age of ssl cert
+  stat: path=/etc/pki/dovecot/certs/dovecot.pem
+  register: dovecot_cert_stat
+
+# == /usr/libexec/dovecot/mkcert.sh?
+- name: Dovecot - SSL cert
+  command: /usr/bin/openssl req -new -x509 -nodes -config /etc/pki/dovecot/dovecot-openssl.cnf -out /etc/pki/dovecot/certs/dovecot.pem -keyout /etc/pki/dovecot/private/dovecot.pem -days 125
+  when: ansible_date_time.epoch|float - dovecot_cert_stat.stat.mtime > 8640000
+
+- name: dovecot config
+  template: src=etc_dovecot_dovecot.conf.j2 dest=/etc/dovecot/dovecot.conf 
+            owner=root group=root mode=0644 backup=no
+  notify: restart dovecot
+
+- name: more dovecot configs
+  template: src=etc_dovecot_confd_{{item}}.j2 dest=/etc/dovecot/conf.d/{{item}}
+            owner=root group=root mode=0644 backup=no
+  with_items:
+    - 15-lda.conf
+    - 10-mail.conf
+    - 10-master.conf
+    - 10-auth.conf
+    - 10-ssl.conf
+  notify: 
+    - restart postfix
+    - restart dovecot
+
+- name: configure firewall imap
+  command: firewall-cmd --zone=dmz --add-service=imaps
+- command: firewall-cmd --zone=dmz --add-service=imaps --permanent
+
+- name: configure firewall pop
+  command: firewall-cmd --zone=dmz --add-service=pop3s
+- command: firewall-cmd --zone=dmz --add-service=pop3s --permanent
+
+- name: ensure dovecot is started
+  service: name=dovecot state=started enabled=yes

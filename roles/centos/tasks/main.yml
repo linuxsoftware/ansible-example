@@ -1,0 +1,110 @@
+---
+- name: EPEL repository installed
+  yum: name=epel-release state=present
+
+- name: IUS repository installed
+  command: rpm -i http://dl.iuscommunity.org/pub/ius/stable/CentOS/7/x86_64/ius-release-1.0-13.ius.centos7.noarch.rpm creates=/etc/yum.repos.d/ius.repo
+
+- name: update all RPMs
+  yum: name=* state=latest
+
+- name: some useful RPMs installed
+  yum: pkg={{item}} state=present
+  with_items:
+    - vim-enhanced
+    - nmap
+    - gcc
+    - gcc-c++
+    - fortune-mod
+    - screen
+    - python34u
+    - python34u-devel
+    - readline-devel
+    - firewalld
+    - fail2ban
+    - fail2ban-firewalld
+    - git
+    - yum-utils
+    - opencv
+    - mlocate
+    - ntp
+    - psmisc
+    - tree
+    - libjpeg-turbo-devel
+    - openjpeg-devel
+    - zlib-devel
+    - libtiff-devel
+    - lcms2-devel
+    - libwebp-devel
+    - freetype-devel
+    - tcl-devel
+    - tk-devel
+    - python34u-tkinter
+
+- name: some unneeded RPMs removed
+  yum: pkg={{item}} state=absent
+  with_items:
+    - php
+    - php-pdo
+    - php-xml
+    - php-cli
+    - php-gd
+    - php-mysql
+    - php-process
+    - php-pear
+    - php-mbstring
+    - php-common
+    - php-odbc
+    - php-pgsql
+
+- name: firewalld is configured
+  template: src=firewalld.conf.j2 dest=/etc/firewalld/firewalld.conf
+            owner=root group=root mode=0640 backup=no
+
+- name: startup firewall
+  service: name=firewalld state=started enabled=yes
+
+- name: set eth1 to default zone (dmz)
+  command: firewall-cmd --add-interface=eth1
+- command: firewall-cmd --add-interface=eth1 --permanent
+
+# NB Ansible 1.8 doesn't have immediate
+- name: configure firewall ssh port
+  command: firewall-cmd --zone=dmz --add-port=353/tcp
+- command: firewall-cmd --zone=dmz --add-port=353/tcp --permanent
+#- name: configure firewall ssh port
+#  firewalld: zone=dmz port=353/tcp state=enabled immediate=true permanent=true 
+
+- name: configure firewall ssh services
+  command: firewall-cmd --zone=dmz --remove-service=ssh
+- command: firewall-cmd --zone=dmz --remove-service=ssh --permanent
+# - name: configure firewall ssh services
+#  firewalld: zone=dmz service=ssh state=disabled immediate=true permanent=true 
+
+- name: get rid of buggy scripts
+  file: path=/etc/{{item}}/000loaddelay state=absent
+  with_items:
+    - cron.hourly
+    - cron.daily
+    - cron.weekly
+    - cron.monthly
+
+- name: prevent systemd error msgs about this missing service
+  command: systemctl disable dmraid-activation.service
+  ignore_errors: yes
+
+- name: fail2ban is configured
+  template: backup=no src=jail.local.j2 dest=/etc/fail2ban/jail.local 
+            owner=root group=root mode=0644
+  notify:
+    - restart fail2ban
+
+- name: timezone
+  command: timedatectl set-timezone Canada/Eastern
+
+- name: startup ntpd
+  service: name=ntpd state=started enabled=yes
+
+- name: locale
+  command: localectl set-locale LANG=en_CA.utf8
+

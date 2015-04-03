@@ -1,0 +1,21 @@
+---
+- include: postfix.yml
+- include: dovecot.yml
+- include: dkim.yml
+#   only_if: "${mx_dkim_enabled} "
+- include: spf.yml
+#   only_if: "${mx_spf_enabled} "
+
+# - include: clamav.yml
+#   only_if: "${mx_clamav_enabled} "
+#
+# - include: spamassassin.yml
+#   only_if: "${mx_spamassassin_enabled} "
+#
+#
+#
+# - include: lists.yml
+#
+# - include: postgrey.yml
+#   only_if: "${mx_postgrey_enabled} "
+#

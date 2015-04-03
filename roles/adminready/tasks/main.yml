@@ -1,0 +1,16 @@
+---
+- name: the admin user is created
+  user: name=theadminuser password="*"
+
+- name: your public ssh key is authorized
+  authorized_key: user=theadminuser key="{{ lookup('file', '/home/mylocaluser/.ssh/id_rsa.pub') }}"
+
+- name: Ensure SSH is configured
+  template: backup=no src=sshd_config.j2 dest=/etc/ssh/sshd_config
+            owner=root group=root mode=0644
+  notify:
+    - restart ssh
+
+- name: no root key for hosting company, thanks all the same
+  file: path=/root/.ssh/authorized_keys state=absent
+  ignore_errors: yes

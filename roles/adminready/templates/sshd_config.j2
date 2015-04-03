@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+
+Protocol 2
+SyslogFacility AUTHPRIV
+PermitRootLogin no
+ChallengeResponseAuthentication no
+PasswordAuthentication no
+Port 1000
+Subsystem	sftp	/usr/libexec/openssh/sftp-server
+

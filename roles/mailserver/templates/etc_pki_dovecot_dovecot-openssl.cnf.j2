@@ -1,0 +1,33 @@
+#{{ ansible_managed }}
+#
+[ req ]
+default_bits = 1024
+encrypt_key = yes
+distinguished_name = req_dn
+x509_extensions = cert_type
+prompt = no
+
+[ req_dn ]
+# country (2 letter code)
+C=CA
+
+# State or Province Name (full name)
+ST=Nunavut
+
+# Locality Name (eg. city)
+L=Iqaluit
+
+# Organization (eg. company)
+O=Company
+
+# Organizational Unit Name (eg. section)
+OU=mail server
+
+# Common Name (*.example.com is also possible)
+CN=myhostname.com
+
+# E-mail contact
+emailAddress=postmaster@myhostname.com
+
+[ cert_type ]
+nsCertType = server

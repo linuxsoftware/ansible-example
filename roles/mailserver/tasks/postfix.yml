@@ -1,0 +1,51 @@
+---
+- name: Postfix - Installation
+  yum: pkg={{item}} state=present
+  with_items:
+    - postfix
+    - mailx
+
+- file: path=/home/postoffice state=directory owner=root group=root mode=0755
+
+- name: mymail user is created
+  user: name=mymail
+        password="$6$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        update_password=on_create shell=/sbin/nologin
+
+- name: othermail user is created
+  user: name=othermail
+        password="$6$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        update_password=on_create shell=/sbin/nologin
+
+- name: Postfix - Aliases
+  template: src=etc_aliases.j2 dest=/etc/aliases
+            owner=root group=root mode=0644
+  notify: postfix aliases
+
+- name: Postfix - Virtual Aliases
+  template: src=etc_postfix_virtual.j2 dest=/etc/postfix/virtual
+            owner=root group=root mode=0644
+  notify:
+    - postfix virtual
+    - restart postfix
+
+- name: Postfix - Configuration (main.cf)
+  template: src=etc_postfix_main.cf.j2 dest=/etc/postfix/main.cf 
+            owner=root group=root mode=0644
+  notify: restart postfix
+
+- name: Postfix - Configuration (master.cf)
+  template: src=etc_postfix_master.cf.j2 dest=/etc/postfix/master.cf
+            owner=root group=root mode=0644
+  notify: restart postfix
+
+- name: configure firewall smtps
+  command: firewall-cmd --zone=dmz --add-service=smtp
+- command: firewall-cmd --zone=dmz --add-service=smtp --permanent
+
+- name: configure firewall smtps
+  command: firewall-cmd --zone=dmz --add-port=465/tcp
+- command: firewall-cmd --zone=dmz --add-port=465/tcp --permanent
+
+- name: ensure postfix is started
+  service: name=postfix state=started enabled=yes

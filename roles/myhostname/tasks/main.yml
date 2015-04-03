@@ -1,0 +1,31 @@
+---
+- name: myonlineuserbits private key installed
+  copy: src=myonlineuserbits_rsa dest=~/.ssh/ mode=0600
+
+- name: myonlineuserbits public key installed
+  copy: src=myonlineuserbits_rsa.pub dest=~/.ssh/ mode=0644
+
+- name: ssh myonlineuser user config
+  template: src=myonlineuser_ssh_config.j2 dest=~/.ssh/config mode=0600 backup=no
+
+- name: Git
+  git: repo=git@bitbucket.org:myonlineuser/www.git dest=~/overthere 
+       accept_hostkey=yes remote=bitbucket 
+       key_file={{ansible_env.HOME}}/.ssh/myonlineuserbits_rsa
+    
+- name: Python virtualenv
+  pip: name=pip virtualenv=~/env/myonlineuser virtualenv_command=pyvenv-3.4
+
+- name: make sure pip is up to date
+  command: ~/env/myonlineuser/bin/pip install --upgrade pip
+
+- name: Python requirements
+  pip: requirements=~/overthere/remote/requirements.txt
+       virtualenv=~/env/myonlineuser virtualenv_command=pyvenv-3.4
+
+- name: copy up local.py
+  copy: src=/somewhere/on/my/local/computer/local.py
+        dest=~/overthere/on/my/remote/computer/
+        owner=myonlineuser group=myonlineuser mode=0600
+
+

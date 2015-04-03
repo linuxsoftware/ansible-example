@@ -1,0 +1,7 @@
+---
+- hosts: myhostname-servers
+  vars:
+    - ansible_ssh_port: 1000
+  remote_user: myonlineuser
+  roles:
+    - myhostname

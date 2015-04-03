@@ -1,0 +1,37 @@
+---
+- name: DKIM - Installation
+  yum: pkg=opendkim state=latest
+
+- name: DKIM - Myhostname directory
+  file: path=/etc/opendkim/keys/myhostname.com state=directory
+        owner=root group=root mode=0755
+
+- name: DKIM - Myhostname private key
+  copy: src=etc_opendkim_keys_myhostnamecom_paravion.private 
+        dest=/etc/opendkim/keys/myhostname.com/paravion.private
+        owner=opendkim group=opendkim mode=0600
+  notify: restart opendkim
+
+- name: DKIM - Myhostname public key
+  copy: src=etc_opendkim_keys_myhostnamecom_paravion.txt
+        dest=/etc/opendkim/keys/myhostname.com/paravion.txt
+        owner=opendkim group=opendkim mode=0600
+
+- name: DKIM - Configuration
+  template: src=etc_opendkim.conf.j2 dest=/etc/opendkim.conf 
+            owner=root group=root mode=0644
+  notify: restart opendkim
+
+- name: DKIM configs
+  template: src=etc_opendkim_{{item}}.j2 dest=/etc/opendkim/{{item}} backup=no
+  with_items:
+    - KeyTable
+    - SigningTable
+    - TrustedHosts
+  notify:
+    - restart opendkim
+    - restart postfix
+
+- name: ensure DKIM server is started
+  service: name=opendkim state=started enabled=yes
+

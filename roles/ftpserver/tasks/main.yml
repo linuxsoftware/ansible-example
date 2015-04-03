@@ -1,0 +1,39 @@
+---
+- name: install vsftpd
+  yum: name=vsftpd state=present
+
+# NB Ansible 1.8 doesn't have immediate
+#- name: configure firewall
+#  firewalld: zone=dmz service={{item}} state=enabled
+#             immediate=true permanent=true 
+#  with_items:
+#    - ftp
+
+- name: configure firewall ftp
+  command: firewall-cmd --zone=dmz --add-service=ftp --permanent
+  notify: restart firewalld
+- command: firewall-cmd --permanent --add-port=21/tcp
+  notify: restart firewalld
+
+- name: filetransfer user is created
+  user: name=filetransfer shell=/sbin/nologin 
+        password='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+- file: path=/home/filetransfer state=directory
+        owner=filetransfer group=filetransfer mode=0500
+
+- file: path=/home/filetransfer/uploads state=directory 
+        owner=filetransfer group=filetransfer mode=0755
+
+- name: vsftpd config
+  template: src=vsftpd.conf.j2 dest=/etc/vsftpd/vsftpd.conf backup=no
+  notify: restart vsftpd
+
+- name: users who can FTP
+  template: src=user_list.j2 dest=/etc/vsftpd/user_list backup=no
+  notify: restart vsftpd
+
+- name: ensure FTP server is started
+  service: name=vsftpd state=started enabled=yes
+
+
